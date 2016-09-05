@@ -1,0 +1,274 @@
+Require Import Arith Bool.
+
+(*
+Definition specification_of_divides(divides : nat -> nat -> Prop) :=
+  (forall j : nat,
+    divides j 0)
+  /\
+  (forall j : nat,
+    divides j j)
+  /\
+  (forall j i : nat,
+    divides j i = divides j (j + i)).
+*)
+
+
+Definition specification_of_divides(divides : nat -> nat -> Prop) :=
+  (forall x y : nat,
+     divides x y = exists z, y = z*x).
+
+Proposition divides_zero :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j : nat,
+      divides j 0.
+Proof.
+  intros divides specification_of_divides.
+  intro j.
+  rewrite -> specification_of_divides.
+  exists 0.
+  ring.
+Qed.
+
+Proposition divides_self :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j : nat,
+      divides j j.
+Proof.
+  intros divides specification_of_divides.
+  intro j.
+  rewrite -> specification_of_divides.
+  exists 1.
+  ring.
+Qed.
+
+Proposition everything_divides_zero :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j : nat,
+      divides 0 j.
+Proof.
+  intros divides specification_of_divides.
+  intro j.
+  rewrite -> specification_of_divides.
+  induction j.
+    exists 0.
+    ring.
+Admitted.
+
+Proposition everything_divides_one :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j : nat,
+      divides 1 j.
+Proof.
+  intros divides specification_of_divides.
+  intro j.
+  rewrite -> specification_of_divides.
+  induction j.
+    exists 0.
+    ring.
+
+    exists (S j).
+    ring.
+Qed.
+
+Proposition divides_one :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j i : nat,
+      divides j i = divides j (j + i).
+Proof.
+  intros divides specification_of_divides.
+  intros j i.
+  rewrite ->2 specification_of_divides.
+  induction j.
+     induction i.
+       exists.
+
+     exists.
+
+     exists.
+
+Proposition divides_one :
+  forall (divides : nat -> nat -> Prop),
+    specification_of_divides divides ->
+    forall j : nat,
+      divides j 1.
+Proof.
+  intros divides specification_of_divides.
+  intro j.
+  (*rewrite -> specification_of_divides.
+  *)
+  induction j.
+    apply (everything_divides_zero divides specification_of_divides 1).
+
+    rewrite -> specification_of_divides.
+
+Qed.
+
+Lemma one_is_divisor_of_six :
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+      divisor 6 1 = true.
+Proof.
+  intros divisor spec.
+  rewrite (divisor_one divisor spec).
+  reflexivity.
+Qed.
+
+Lemma six_is_divisor_of_six :
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+      divisor 6 6 = true.
+Proof.
+  intros divisor spec.
+  rewrite (divisor_self divisor spec).
+  reflexivity.
+Qed.
+
+Lemma one_plus_i_equals_S_i :
+  forall i : nat,
+    plus 1 i = (S i).
+Proof.
+  intro i.
+  unfold plus.
+  reflexivity.
+Qed.
+
+Lemma simplify_minus :
+  forall i j,
+    (S i) - (S j) = i - j.
+Proof.
+  intros i j.
+  rewrite (minus_plus_simpl_l_reverse i j 1).
+  rewrite -> (one_plus_i_equals_S_i i).
+  rewrite -> (one_plus_i_equals_S_i j).
+  reflexivity.
+Qed.
+
+Lemma two_is_divisor_of_six :
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+      divisor 6 2 = true.
+Proof.
+  intros divisor spec.
+  rewrite ->2 (divisor_ic divisor spec).
+  rewrite ->2 simplify_minus.
+  rewrite <- minus_n_O.
+  rewrite ->2 simplify_minus.
+  rewrite <- minus_n_O.
+  rewrite (divisor_self divisor spec).
+  reflexivity.
+
+  rewrite ->2 simplify_minus.
+  rewrite <- minus_n_O.
+  rewrite ->2 simplify_minus.
+  rewrite <- minus_n_O.
+  unfold beq_nat.
+  unfold gt_Sn_O.
+  rewrite gt_pred.
+  ring.
+Qed.
+
+Lemma three_is_divisor_of_six :
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+      divisor 6 3 = true.
+Proof.
+  intros divisor spec.
+  rewrite -> (divisor_ic divisor spec).
+  rewrite ->3 simplify_minus.
+  rewrite <- minus_n_O.
+  rewrite (divisor_self divisor spec).
+  reflexivity.
+Qed.
+
+Definition specification_of_bool_to_int(bool_to_int : bool -> nat) :=
+  (bool_to_int false = 0)
+  /\
+  (bool_to_int true = 1).
+
+Definition specification_of_num_divisors(num_divisors : nat -> nat) :=
+  (num_divisors 1 = 1)
+  /\
+  (forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+    forall (bool_to_int : bool -> nat),
+    specification_of_bool_to_int bool_to_int ->
+    forall j : nat,
+      num_divisors (S j) = (bool_to_int (divisor (S j) j)) + (num_divisors j)).
+
+Lemma two_has_two_divisors :
+  forall (num_divisors : nat -> nat),
+    specification_of_num_divisors num_divisors ->
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+  forall (bool_to_int : bool -> nat),
+    specification_of_bool_to_int bool_to_int ->
+      num_divisors 2 = 2.
+Proof.
+  intros num_divisor num_spec.
+
+  intros divisor specification_of_divisor.
+
+  intros bool_to_int specification_of_bool_to_int.
+
+  destruct num_spec as [one_bc one_ic].
+
+  rewrite (one_ic divisor specification_of_divisor bool_to_int specification_of_bool_to_int).
+
+  destruct specification_of_bool_to_int as [bti_bc bti_ic].
+
+  rewrite (divisor_one divisor specification_of_divisor).
+
+  rewrite bti_ic.
+
+  rewrite one_bc.
+
+  ring.
+Qed.
+
+Lemma seven_has_two_divisors :
+  forall (num_divisors : nat -> nat),
+    specification_of_num_divisors num_divisors ->
+  forall (divisor : nat -> nat -> bool),
+    specification_of_divisor divisor ->
+  forall (bool_to_int : bool -> nat),
+    specification_of_bool_to_int bool_to_int ->
+      num_divisors 7 = 2.
+Proof.
+  intros num_divisor num_spec.
+
+  intros divisor specification_of_divisor.
+
+  intros bool_to_int specification_of_bool_to_int.
+
+  destruct num_spec as [one_bc one_ic].
+
+  rewrite ->6 (one_ic divisor specification_of_divisor bool_to_int specification_of_bool_to_int).
+
+  destruct specification_of_bool_to_int as [bti_bc bti_ic].
+
+  rewrite -> (divisor_ic divisor specification_of_divisor).
+  rewrite ->? simplify_minus.
+  rewrite <- minus_n_O.
+  
+
+  rewrite bti_ic.
+
+  rewrite one_bc.
+
+  ring.
+Qed.
+
+
+
+
+
+
+
+
+
+
